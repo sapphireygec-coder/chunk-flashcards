@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>単語チャンク暗記カード</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#101116;
+    --desk:#1b1d25;
+    --desk-2:#22242e;
+    --paper:#f0ead9;
+    --ink-muted:#8d8fa0;
+    --amber:#f2a541;
+    --amber-dim:#c9822c;
+    --teal:#63c9bd;
+    --rose:#e0918e;
+    --lav:#a79ce0;
+    --danger:#e2694f;
+    --ring:#33353f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(242,165,65,0.10), transparent 60%),
+      var(--void);
+    color:var(--paper);
+    font-family:'Zen Maru Gothic', sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 16px 48px;
+  }
+  .en{font-family:'Space Grotesk', sans-serif;}
+
+  /* ---------- header ---------- */
+  .top{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.12em;
+    color:var(--ink-muted);
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .eyebrow b{color:var(--amber); font-weight:700;}
+  .reset-btn{
+    background:none;border:none;color:var(--ink-muted);
+    font-size:11px; font-family:'Zen Maru Gothic',sans-serif;
+    cursor:pointer; text-decoration:underline; opacity:.7;
+  }
+  .reset-btn:hover{opacity:1;color:var(--danger);}
+
+  .progress-track{
+    width:100%; max-width:460px; height:6px; border-radius:4px;
+    background:var(--desk-2); overflow:hidden; margin-bottom:22px;
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg,var(--amber-dim),var(--amber));
+    width:0%; transition:width .4s ease;
+  }
+
+  .score-comment{
+    width:100%; max-width:460px; min-height:16px;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:12.5px; letter-spacing:.01em;
+    color:var(--amber);
+    margin-top:8px; margin-bottom:14px;
+    text-align:left;
+    opacity:.95;
+  }
+
+  /* ---------- stage / lamp glow ---------- */
+  .stage{
+    position:relative;
+    width:100%; max-width:440px;
+    display:flex; justify-content:center;
+    perspective:1400px;
+    margin-bottom:18px;
+  }
+  .lamp-glow{
+    position:absolute; top:-60px; left:50%; transform:translateX(-50%);
+    width:340px; height:220px;
+    background:radial-gradient(ellipse at center, rgba(242,165,65,.28), transparent 70%);
+    filter:blur(6px);
+    pointer-events:none;
+    animation:breathe 5s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{opacity:.7; transform:translateX(-50%) scale(1);}
+    50%{opacity:1; transform:translateX(-50%) scale(1.05);}
+  }
+
+  .card-wrap{
+    position:relative;
+    width:100%; max-width:400px; height:280px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .card{
+    position:relative; width:100%; height:100%;
+    transform-style:preserve-3d;
+    transition:transform .5s cubic-bezier(.4,.2,.2,1);
+  }
+  .card.flipped{ transform:rotateY(180deg); }
+
+  .face{
+    position:absolute; inset:0;
+    -webkit-backface-visibility:hidden; backface-visibility:hidden;
+    border-radius:18px;
+    background:linear-gradient(165deg,var(--desk-2),var(--desk));
+    box-shadow:0 20px 45px -18px rgba(0,0,0,.7), 0 0 0 1px var(--ring);
+    display:flex; flex-direction:column;
+    padding:0;
+    overflow:hidden;
+  }
+  .face.back{ transform:rotateY(180deg); }
+
+  /* side tab, like the textbook's colored margin label */
+  .tab{
+    position:absolute; top:22px; left:0;
+    writing-mode:vertical-rl;
+    font-size:11px; letter-spacing:.05em;
+    padding:10px 5px;
+    border-radius:0 8px 8px 0;
+    color:#1a1a1a;
+    font-weight:700;
+    box-shadow:2px 2px 6px rgba(0,0,0,.35);
+  }
+
+  /* ring holes to sell the "flash card ring" motif */
+  .rings{ display:flex; justify-content:center; gap:26px; padding-top:14px; }
+  .rings span{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--void);
+    box-shadow:inset 0 2px 3px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.03);
+  }
+
+  .card-id{
+    position:absolute; top:14px; right:18px;
+    font-family:'Space Grotesk',sans-serif; font-size:11px;
+    color:var(--ink-muted);
+  }
+
+  .card-body{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:20px 34px;
+  }
+  .jp-text{
+    font-size:26px; font-weight:700; line-height:1.5; color:var(--paper);
+  }
+  .en-text{
+    font-size:27px; font-weight:700; line-height:1.5; color:var(--paper);
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .en-text .key{ color:var(--amber); }
+
+  .hint{
+    text-align:center; font-size:11px; color:var(--ink-muted);
+    padding-bottom:14px; letter-spacing:.04em;
+  }
+
+  .speak-btn{
+    position:absolute; bottom:14px; right:16px;
+    width:38px; height:38px; border-radius:50%;
+    background:var(--desk); border:1px solid var(--ring);
+    color:var(--amber); font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .speak-btn:hover{ background:var(--void); }
+
+  /* ---------- controls ---------- */
+  .status-row{
+    display:flex; gap:10px; width:100%; max-width:400px; margin-top:6px;
+  }
+  .status-btn{
+    flex:1; padding:11px 0; border-radius:12px; border:1px solid var(--ring);
+    background:var(--desk); color:var(--ink-muted);
+    font-family:'Zen Maru Gothic',sans-serif; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .status-btn.review{ }
+  .status-btn.review.active{ background:rgba(226,105,79,.15); border-color:var(--danger); color:var(--danger); }
+  .status-btn.known.active{ background:rgba(99,201,189,.15); border-color:var(--teal); color:var(--teal); }
+  .status-btn:hover{ opacity:.85; }
+
+  .nav-row{
+    display:flex; align-items:center; gap:10px; width:100%; max-width:400px; margin-top:12px;
+  }
+  .nav-btn{
+    flex:1; padding:12px 0; border-radius:12px; border:none;
+    background:var(--desk-2); color:var(--paper);
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+    cursor:pointer;
+  }
+  .nav-btn:hover{ background:var(--ring); }
+  .nav-btn.shuffle{ flex:0 0 46px; font-size:16px; }
+
+  /* group jump pills */
+  .group-nav{
+    display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+    width:100%; max-width:440px; margin-top:22px;
+  }
+  .pill{
+    font-size:11px; padding:6px 10px; border-radius:20px;
+    background:var(--desk); border:1px solid var(--ring); color:var(--ink-muted);
+    cursor:pointer;
+  }
+  .pill.current{ border-color:var(--amber); color:var(--amber); }
+
+  /* note card */
+  .note-toggle{
+    margin-top:16px; font-size:12px; color:var(--amber-dim);
+    background:none; border:1px dashed var(--amber-dim); border-radius:10px;
+    padding:8px 14px; cursor:pointer; max-width:400px; width:100%;
+    display:flex; align-items:center; gap:6px; justify-content:center;
+  }
+  .note-box{
+    max-width:400px; width:100%; margin-top:10px;
+    background:var(--desk-2); border-left:3px solid var(--amber);
+    border-radius:0 12px 12px 0; padding:14px 16px; font-size:13px;
+    line-height:1.7; color:var(--paper); display:none;
+  }
+  .note-box.show{ display:block; }
+  .note-box b{ color:var(--amber); }
+
+  .foot{
+    margin-top:30px; font-size:11px; color:var(--ink-muted); text-align:center;
+    max-width:420px; line-height:1.8;
+  }
+  .foot code{ background:var(--desk-2); padding:1px 5px; border-radius:4px; }
+
+  @media (max-width:420px){
+    .jp-text{font-size:22px;} .en-text{font-size:22px;}
+    .card-wrap{height:260px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="top">
+    <div class="eyebrow">中2単語チャンク &nbsp;·&nbsp; <b id="doneCount">0</b>/60 できた</div>
+    <button class="reset-btn" id="resetBtn">記録をリセット</button>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="score-comment" id="scoreComment"></div>
+
+  <div class="stage">
+    <div class="lamp-glow"></div>
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="card">
+        <div class="face front">
+          <div class="tab" id="tabFront">-</div>
+          <div class="rings"><span></span><span></span><span></span></div>
+          <div class="card-id" id="idFront">0011</div>
+          <div class="card-body"><div class="jp-text" id="jpText">-</div></div>
+          <div class="hint">タップして英語チャンクを確認</div>
+        </div>
+        <div class="face back">
+          <div class="tab" id="tabBack">-</div>
+          <div class="rings"><span></span><span></span><span></span></div>
+          <div class="card-id" id="idBack">0011</div>
+          <div class="card-body"><div class="en-text" id="enText">-</div></div>
+          <div class="hint">タップして日本語にもどる</div>
+          <button class="speak-btn" id="speakBtn" title="発音を聞く">🔊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <button class="status-btn review" id="reviewBtn">✕ わからない</button>
+    <button class="status-btn known" id="knownBtn">○ できた</button>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn" id="prevBtn">← 前へ</button>
+    <button class="nav-btn shuffle" id="shuffleBtn" title="シャッフル">🔀</button>
+    <button class="nav-btn" id="nextBtn">次へ →</button>
+  </div>
+
+  <div class="group-nav" id="groupNav"></div>
+
+  <button class="note-toggle" id="noteToggle" style="display:none;">🐻 このグループの豆知識を見る</button>
+  <div class="note-box" id="noteBox"></div>
+
+  <div class="foot">
+    音声はまず <code>audio</code> フォルダの中の録音ファイル（例: <code>audio/0011.mp3</code>）を探しにいき、見つかればそれを再生します。見つからないカードは自動でブラウザの読み上げ機能（Web Speech API）が代わりに読み上げます。<br>
+    学習の記録（できた／わからない）は自動的に保存され、次回開いたときも引き継がれます。
+  </div>
+
+<script>
+const GROUPS = {
+  A:{name:'会話のきっかけをつくる①', color:'var(--amber)'},
+  B:{name:'事実や情報を伝える②', color:'var(--teal)'},
+  C:{name:'事実や情報を伝える③', color:'var(--teal)'},
+  D:{name:'事実や情報を伝える④', color:'var(--teal)'},
+  E:{name:'考えや意図を伝える①', color:'var(--rose)'},
+  F:{name:'行動を相手に説明する①', color:'var(--lav)'},
+};
+
+// data extracted from the uploaded pages (0011-0070)
+const CARDS = [
+ {id:'0011',g:'A',tab:'自分や家族について話す',jp:'家族を紹介する',en:'introduce my family',key:'introduce'},
+ {id:'0012',g:'A',tab:'自分や家族について話す',jp:'彼をボブと呼ぶ',en:'call him Bob',key:'call'},
+ {id:'0013',g:'A',tab:'自分や家族について話す',jp:'赤ちゃんを出産する',en:'give birth to a baby',key:'birth'},
+ {id:'0014',g:'A',tab:'自分や家族について話す',jp:'18歳の時に',en:'at the age of 18',key:'age'},
+ {id:'0015',g:'A',tab:'自分や家族について話す',jp:'アメリカ合衆国に住む',en:'live in the USA',key:'live',speak:'liv in the USA'},
+ {id:'0016',g:'A',tab:'自分や家族について話す',jp:'この都市に来る',en:'come to this city',key:'city'},
+ {id:'0017',g:'A',tab:'自分や家族について話す',jp:'自分の家を持っている',en:'have my own home',key:'own'},
+ {id:'0018',g:'A',tab:'自分や家族について話す',jp:'車を運転する',en:'drive a car',key:'drive'},
+ {id:'0019',g:'A',tab:'自分や家族について話す',jp:'その病院で働く',en:'work at the hospital',key:'work'},
+ {id:'0020',g:'A',tab:'自分や家族について話す',jp:'映画を観る',en:'watch movies',key:'movies',
+   note:'<b>自己紹介</b><br>自己紹介するときは "Let me introduce myself." と切り出すと自然。誰かを自分に紹介してほしいときは "Could [Will/Would] you introduce me to him?" のように頼む。'},
+
+ {id:'0021',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'空を見る',en:'look at the sky',key:'look'},
+ {id:'0022',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'写真を見せる',en:'show a photo',key:'show'},
+ {id:'0023',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'何も言わない',en:'say nothing',key:'say'},
+ {id:'0024',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'白い鳥が見える',en:'see a white bird',key:'see'},
+ {id:'0025',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'彼の歌を聞く',en:'hear his song',key:'hear'},
+ {id:'0026',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'黒いコートを着ている',en:'wear a black coat',key:'wear'},
+ {id:'0027',g:'B',tab:'見たり聞いたりしたことについて話す',jp:'その日を覚えている',en:'remember the day',key:'remember'},
+ {id:'0028',g:'B',tab:'具体的な計画について話す',jp:'計画を作る',en:'make a plan',key:'plan'},
+ {id:'0029',g:'B',tab:'具体的な計画について話す',jp:'夏休み',en:'the summer vacation',key:'vacation'},
+ {id:'0030',g:'B',tab:'具体的な計画について話す',jp:'商売をする',en:'do business',key:'business',
+   note:'<b>look at と watch の違い</b><br>どちらも「見る」だが、look at は視線を向ける「動作」そのもの。watch は対象をじっと見続けることを表す。'},
+
+ {id:'0031',g:'C',tab:'スケジュール・予定について話す',jp:'今日は忙しい',en:'be busy today',key:'busy'},
+ {id:'0032',g:'C',tab:'スケジュール・予定について話す',jp:'30分節約する',en:'save 30 minutes',key:'save'},
+ {id:'0033',g:'C',tab:'スケジュール・予定について話す',jp:'休暇を過ごす',en:'spend my holidays',key:'spend'},
+ {id:'0034',g:'C',tab:'スケジュール・予定について話す',jp:'時間がない',en:'have no time',key:'time'},
+ {id:'0035',g:'C',tab:'スケジュール・予定について話す',jp:'日本を離れてアメリカへ向かう',en:'leave Japan for America',key:'leave'},
+ {id:'0036',g:'C',tab:'スケジュール・予定について話す',jp:'神戸駅に到着する',en:'arrive at Kobe Station',key:'arrive'},
+ {id:'0037',g:'C',tab:'スケジュール・予定について話す',jp:'7時に到着の予定だ',en:'be due at seven',key:'due'},
+ {id:'0038',g:'C',tab:'スケジュール・予定について話す',jp:'午前10時に始まる',en:'begin at 10 a.m.',key:'begin'},
+ {id:'0039',g:'C',tab:'スケジュール・予定について話す',jp:'仕事を終える',en:'finish my work',key:'finish'},
+ {id:'0040',g:'C',tab:'スケジュール・予定について話す',jp:'翌日',en:'the following day',key:'following',
+   note:'<b>spend の語法</b><br>spend A on B「A（時間・お金）をBに費やす」／ spend A (in) doing「Aを…して費やす」。例: I spent 30 minutes on homework.'},
+
+ {id:'0041',g:'D',tab:'数量について話す',jp:'私のすべての友人たち',en:'all my friends',key:'all'},
+ {id:'0042',g:'D',tab:'数量について話す',jp:'どの通りも',en:'every street',key:'every'},
+ {id:'0043',g:'D',tab:'数量について話す',jp:'私たちそれぞれ',en:'each of us',key:'each'},
+ {id:'0044',g:'D',tab:'数量について話す',jp:'多くの日数',en:'many days',key:'many'},
+ {id:'0045',g:'D',tab:'数量について話す',jp:'何本かの鉛筆を持っている',en:'have some pencils',key:'some'},
+ {id:'0046',g:'D',tab:'数量について話す',jp:'兄弟がひとりもいない',en:"don't have any brothers",key:'any'},
+ {id:'0047',g:'D',tab:'数量について話す',jp:'もう1枚のシャツ',en:'another shirt',key:'another'},
+ {id:'0048',g:'D',tab:'数量について話す',jp:'生徒たちの半分',en:'half of the students',key:'half'},
+ {id:'0049',g:'D',tab:'数量について話す',jp:'子どもたちの4分の1',en:'a quarter of the children',key:'quarter'},
+ {id:'0050',g:'D',tab:'数量について話す',jp:'1枚の紙',en:'a piece of paper',key:'piece',
+   note:'<b>代名詞＋of the＋複数名詞</b><br>all, each, many, any は代名詞としても使え、〈all[each, many, any] of the＋所有格＋複数名詞〉の形になる。<br>例: all of the students「生徒全員」／ each of the students「生徒それぞれ」'},
+
+ {id:'0051',g:'E',tab:'もののサイズやデザインについて話す',jp:'そのテーブルの大きさ',en:'the size of the table',key:'size'},
+ {id:'0052',g:'E',tab:'もののサイズやデザインについて話す',jp:'大きいケーキ',en:'a big cake',key:'big'},
+ {id:'0053',g:'E',tab:'もののサイズやデザインについて話す',jp:'平らな土地',en:'flat land',key:'flat'},
+ {id:'0054',g:'E',tab:'もののサイズやデザインについて話す',jp:'私には小さい',en:'small for me',key:'small'},
+ {id:'0055',g:'E',tab:'もののサイズやデザインについて話す',jp:'長いパンツ',en:'long pants',key:'long'},
+ {id:'0056',g:'E',tab:'もののサイズやデザインについて話す',jp:'短いリボン',en:'short ribbons',key:'short'},
+ {id:'0057',g:'E',tab:'もののサイズやデザインについて話す',jp:'きついTシャツ',en:'a tight T-shirt',key:'tight'},
+ {id:'0058',g:'E',tab:'もののサイズやデザインについて話す',jp:'花柄',en:'a flower design',key:'design'},
+ {id:'0059',g:'E',tab:'もののサイズやデザインについて話す',jp:'ある種類の車',en:'a type of car',key:'type'},
+ {id:'0060',g:'E',tab:'もののサイズやデザインについて話す',jp:'お金の一形態',en:'a form of money',key:'form',
+   note:'<b>big と large の違い</b><br>big は主観的な感覚で「大きい／でかい」というニュアンスを含む。large は客観的にサイズが大きいことを示し、自分の感覚は入らない。'},
+
+ {id:'0061',g:'F',tab:'動作について話す',jp:'水を運ぶ',en:'carry water',key:'carry'},
+ {id:'0062',g:'F',tab:'動作について話す',jp:'鳥を捕まえる',en:'catch a bird',key:'catch'},
+ {id:'0063',g:'F',tab:'動作について話す',jp:'そのボタンに触れる',en:'touch the button',key:'touch'},
+ {id:'0064',g:'F',tab:'動作について話す',jp:'そのドアを押す',en:'push the door',key:'push'},
+ {id:'0065',g:'F',tab:'動作について話す',jp:'その机を動かす',en:'move the desk',key:'move'},
+ {id:'0066',g:'F',tab:'動作について話す',jp:'そのいすを置く',en:'put the chair',key:'put'},
+ {id:'0067',g:'F',tab:'動作について話す',jp:'鍵を回す',en:'turn the key',key:'turn'},
+ {id:'0068',g:'F',tab:'動作について話す',jp:'木々を揺さぶる',en:'shake the trees',key:'shake'},
+ {id:'0069',g:'F',tab:'動作について話す',jp:'ジャガイモを掘る',en:'dig potatoes',key:'dig'},
+ {id:'0070',g:'F',tab:'動作について話す',jp:'彼らの歯を磨く',en:'brush their teeth',key:'brush',
+   note:'<b>「かぜを引く」の catch</b><br>catch の中心イメージは「動くものを捕まえること」。空気中の菌を捕まえるイメージから catch a cold で「かぜを引く」という意味になる。'},
+];
+// Each card automatically looks for a recording at audio/<id>.mp3 (e.g. audio/0011.mp3).
+// Upload a matching file to the "audio" folder in the repo and it will be used automatically.
+// Cards without a matching file simply fall back to the computer voice — no code changes needed.
+CARDS.forEach(c => { c.audio = 'audio/' + c.id + '.mp3'; });
+
+// score (= number of cards marked "できた") out of 60, with an English comment per range
+const SCORE_BANDS = [
+  {min:60, max:60, comment:"Perfect score! Every single chunk is locked in — you're ready to move on to the next unit."},
+  {min:50, max:59, comment:"Excellent work! You've clearly mastered most of these chunks. Polish the last few and you're set."},
+  {min:40, max:49, comment:"Great job! You're well on your way — a couple more review rounds will get you to full mastery."},
+  {min:30, max:39, comment:"Good progress! You know a solid chunk of these — keep drilling the ones marked for review."},
+  {min:20, max:29, comment:"You're getting there. Try running through the deck again and focus on the ones you keep missing."},
+  {min:10, max:19, comment:"Off to a start — these chunks need more repetition. Little and often works best."},
+  {min:0,  max:9,  comment:"Just getting started! Flip through the whole deck once before worrying about the score."},
+];
+function commentFor(score){
+  const band = SCORE_BANDS.find(b=>score>=b.min && score<=b.max);
+  return band ? band.comment : '';
+}
+
+let order = CARDS.map((_,i)=>i);
+let pos = 0;
+let flipped = false;
+let statuses = {}; // id -> 'known' | 'review'
+
+const el = id=>document.getElementById(id);
+const cardEl=el('card'), cardWrap=el('cardWrap');
+
+async function loadProgress(){
+  try{
+    const res = await window.storage.get('flashcard-progress', false);
+    if(res && res.value){
+      const data = JSON.parse(res.value);
+      statuses = data.statuses || {};
+      if(typeof data.pos === 'number') pos = Math.min(data.pos, CARDS.length-1);
+    }
+  }catch(e){ /* no saved progress yet */ }
+  renderGroupNav();
+  renderCard();
+}
+
+async function saveProgress(){
+  try{
+    await window.storage.set('flashcard-progress', JSON.stringify({statuses, pos}), false);
+  }catch(e){ console.warn('保存に失敗しました', e); }
+}
+
+function currentCard(){ return CARDS[order[pos]]; }
+
+function renderCard(){
+  const c = currentCard();
+  flipped = false;
+  cardEl.classList.remove('flipped');
+
+  el('tabFront').textContent = c.tab;
+  el('tabBack').textContent = c.tab;
+  el('tabFront').style.background = GROUPS[c.g].color;
+  el('tabBack').style.background = GROUPS[c.g].color;
+  el('idFront').textContent = c.id;
+  el('idBack').textContent = c.id;
+  el('jpText').textContent = c.jp;
+
+  const re = new RegExp('\\b('+c.key+')', 'i');
+  el('enText').innerHTML = c.en.replace(re, '<span class="key">$1</span>');
+
+  el('eyebrowIndex')?.remove();
+  document.querySelector('.eyebrow').innerHTML =
+    `${GROUPS[c.g].name} &nbsp;·&nbsp; <b>${pos+1}</b>/${CARDS.length}`;
+
+  updateStatusButtons();
+  updateProgress();
+  renderGroupNav();
+  renderNote(c);
+}
+
+function updateStatusButtons(){
+  const c = currentCard();
+  const s = statuses[c.id];
+  el('reviewBtn').classList.toggle('active', s==='review');
+  el('knownBtn').classList.toggle('active', s==='known');
+}
+
+function updateProgress(){
+  const done = Object.values(statuses).filter(s=>s==='known').length;
+  el('doneCount').textContent = done;
+  el('progressFill').style.width = (done/CARDS.length*100)+'%';
+  el('scoreComment').textContent = commentFor(done);
+}
+
+function renderGroupNav(){
+  const nav = el('groupNav');
+  nav.innerHTML = '';
+  const c = currentCard();
+  Object.entries(GROUPS).forEach(([key,g])=>{
+    const firstIdx = CARDS.findIndex(x=>x.g===key);
+    const pill = document.createElement('div');
+    pill.className = 'pill' + (c.g===key ? ' current' : '');
+    pill.textContent = g.name.replace(/①|②|③|④/g,'').slice(0,10);
+    pill.onclick = ()=>{ pos = order.indexOf(firstIdx); renderCard(); saveProgress(); };
+    nav.appendChild(pill);
+  });
+}
+
+function renderNote(c){
+  const toggle = el('noteToggle'), box = el('noteBox');
+  if(c.note){
+    toggle.style.display='flex';
+    box.innerHTML = c.note;
+    box.classList.remove('show');
+    toggle.textContent = '🐻 このグループの豆知識を見る';
+  } else {
+    toggle.style.display='none';
+    box.classList.remove('show');
+  }
+}
+
+el('noteToggle').onclick = ()=>{
+  const box = el('noteBox');
+  box.classList.toggle('show');
+};
+
+cardWrap.addEventListener('click', ()=>{
+  flipped = !flipped;
+  cardEl.classList.toggle('flipped', flipped);
+});
+
+el('speakBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  playAudio(currentCard());
+});
+
+function playAudio(c){
+  if(c.audio){
+    const player = new Audio(c.audio);
+    let fellBack = false;
+    const fallback = ()=>{
+      if(fellBack) return;
+      fellBack = true;
+      speak(c.speak || c.en);
+    };
+    player.addEventListener('error', fallback);
+    player.play().catch(fallback);
+  } else {
+    speak(c.speak || c.en);
+  }
+}
+let cachedVoices = [];
+function refreshVoices(){
+  if('speechSynthesis' in window){
+    cachedVoices = window.speechSynthesis.getVoices();
+  }
+}
+refreshVoices();
+if('speechSynthesis' in window){
+  // mobile browsers often load the voice list asynchronously
+  window.speechSynthesis.onvoiceschanged = refreshVoices;
+}
+function pickEnglishVoice(){
+  if(!cachedVoices.length) refreshVoices();
+  return cachedVoices.find(v=>v.lang==='en-US')
+      || cachedVoices.find(v=>v.lang && v.lang.toLowerCase().startsWith('en-us'))
+      || cachedVoices.find(v=>v.lang && v.lang.toLowerCase().startsWith('en'))
+      || null;
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  const voice = pickEnglishVoice();
+  if(voice) u.voice = voice;
+  u.rate = 0.92;
+  window.speechSynthesis.speak(u);
+}
+
+function setStatus(status){
+  const c = currentCard();
+  statuses[c.id] = (statuses[c.id]===status) ? undefined : status;
+  if(statuses[c.id]===undefined) delete statuses[c.id];
+  updateStatusButtons();
+  updateProgress();
+  saveProgress();
+}
+el('knownBtn').onclick = ()=>setStatus('known');
+el('reviewBtn').onclick = ()=>setStatus('review');
+
+function go(delta){
+  pos = (pos + delta + order.length) % order.length;
+  renderCard();
+  saveProgress();
+}
+el('nextBtn').onclick = ()=>go(1);
+el('prevBtn').onclick = ()=>go(-1);
+
+el('shuffleBtn').onclick = ()=>{
+  const currentIdx = order[pos];
+  order = CARDS.map((_,i)=>i);
+  for(let i=order.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [order[i],order[j]]=[order[j],order[i]];
+  }
+  pos = order.indexOf(currentIdx);
+  renderCard();
+};
+
+el('resetBtn').onclick = async ()=>{
+  if(!confirm('学習の記録（できた／わからない）をすべて消去します。よろしいですか？')) return;
+  statuses = {};
+  await saveProgress();
+  updateStatusButtons();
+  updateProgress();
+};
+
+document.addEventListener('keydown', (e)=>{
+  if(e.code==='Space'){ e.preventDefault(); cardWrap.click(); }
+  if(e.code==='ArrowRight'){ go(1); }
+  if(e.code==='ArrowLeft'){ go(-1); }
+  if(e.key==='p' || e.key==='P'){ playAudio(currentCard()); }
+});
+
+loadProgress();
+</script>
+</body>
+</html>
